@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 
 import string
-import numpy 
 
 with open('./resources/input.txt', 'r') as f:
     contents = f.read().splitlines()
