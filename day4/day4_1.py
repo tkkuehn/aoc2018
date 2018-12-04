@@ -47,18 +47,16 @@ with open('./resources/input.txt', 'r') as f:
 
         guard_mins_asleep[guard] = mins_asleep
 
-    most_consistent_sleeper = 0
-    num_times_slept = 0
-    most_slept_minute = 0
+    max_mins_asleep = 0
+    sleepiest_guard_id = 0
+    for guard in guard_mins_asleep:
+        if guard_mins_asleep[guard] > max_mins_asleep:
+             max_mins_asleep = guard_mins_asleep[guard]
+             sleepiest_guard_id = guard
 
-    for guard in guards:
-        minutes_slept = [schedules[date]['asleep'] for date in 
-            guards[guard]]
-        shifts_slept = [sum(x) for x in zip(*minutes_slept)]
-        if max(shifts_slept) > num_times_slept:
-            most_consistent_sleeper = guard
-            num_times_slept = max(shifts_slept)
-            most_slept_minute = shifts_slept.index(num_times_slept)
+    minutes_slept = [schedules[date]['asleep'] for date in 
+        guards[sleepiest_guard_id]]
+    shifts_slept = [sum(x) for x in zip(*minutes_slept)]
    
-    print(most_slept_minute * int(most_consistent_sleeper))
+    print(shifts_slept.index(max(shifts_slept)) * int(sleepiest_guard_id))
 
