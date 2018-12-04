@@ -47,13 +47,6 @@ with open('./resources/input.txt', 'r') as f:
 
         guard_mins_asleep[guard] = mins_asleep
 
-    max_mins_asleep = 0
-    sleepiest_guard_id = 0
-    for guard in guard_mins_asleep:
-        if guard_mins_asleep[guard] > max_mins_asleep:
-             max_mins_asleep = guard_mins_asleep[guard]
-             sleepiest_guard_id = guard
-
     minutes_slept = [schedules[date]['asleep'] for date in 
         guards[sleepiest_guard_id]]
     shifts_slept = [sum(x) for x in zip(*minutes_slept)]
