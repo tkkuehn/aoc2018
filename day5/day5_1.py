@@ -22,3 +22,5 @@ with open('./resources/input.txt', 'r') as f:
                 i += 1
         t += 1
 
+    print(len(polymer))
+
