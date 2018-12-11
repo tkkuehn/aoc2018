@@ -14,8 +14,6 @@ for i in range(300):
         power_4 = int(format(power_3, '03')[-3])
         power_5 = power_4 - 5
         grid[(i, j)] = power_5
-#        if (i, j) == (121, 78):
-#            print(f'{rack_id} {power_1} {power_2} {power_3} {power_4} {power_5} {grid[(121, 78)]}')
 
 highest_power = 0
 highest_point = (0, 0)
