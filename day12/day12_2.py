@@ -11,8 +11,6 @@ state_transitions_string = contents[2:]
 for state_transition in state_transitions_string:
     state_transitions[state_transition[0:5]] = state_transition[9]
 
-print(state_transitions)
-
 initial_state_string = contents[0][15:]
 state = set()
 left_index = 0
@@ -25,6 +23,7 @@ for i in range(state_length):
 
 state = frozenset(state)
 
+# Length of infinite cycle - ends up being 1
 cycle_index = 0
 
 for i in range(50000000000):
@@ -37,16 +36,17 @@ for i in range(50000000000):
         state_cache[state]['rep_count'] += 1
 
         if state_cache[state]['rep_count'] == 2:
-            print('cycle detected')
             state_cache[state]['cycle_index'] = cycle_index
             cycle_index += 1
 
         if state_cache[state]['rep_count'] == 3:
-            # I think this just repeats infinitely now?
-            base_sum = sum(new_state)
-            iterations_left = 50000000000 - i
+            # This one state just repeats infinitely now
+            # So, what's the leftmost pot after fifty million iterations?
+            iterations_left = 50000000000 - (i + 1)
+            infinite_min_state = state_cache[state]['min']
+            new_left_index = left_index + (infinite_min_state * iterations_left)
 
-            print(sum(new_state) + (len(state) * ((left_index + (state_cache[state]['min'] * (50000000000 - (i + 1)))))))
+            print(sum(new_state) + (len(state) * new_left_index))
             break
     else:
         for j in range(-2, state_length + 2):
@@ -71,6 +71,4 @@ for i in range(50000000000):
         state_cache[state]['rep_count'] = 0
 
     state = new_state
-
-print(sum(state) + (len(state) * left_index))
 
