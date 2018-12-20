@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import math
+
 contents = []
 with open('./resources/input.txt', 'r') as f:
     contents = f.read().splitlines()
@@ -11,6 +13,7 @@ goblins = []
 elves = []
 walls = set()
 
+k = 0
 for i in range(y_num):
     line = contents[i]
     for j in range(x_num):
@@ -20,9 +23,13 @@ for i in range(y_num):
         if entity == '#':
             walls.add(pos)
         elif entity == 'G':
-            goblins.append({'type': 'G', 'pos': pos, 'power': 3, 'hp': 200})
+            goblins.append(
+                    {'id': k, 'type': 'G', 'pos': pos, 'power': 3, 'hp': 200})
+            k += 1
         elif entity == 'E':
-            elves.append({'type': 'E', 'pos': pos, 'power': 3, 'hp': 200})
+            elves.append(
+                    {'id': k, 'type': 'E', 'pos': pos, 'power': 3, 'hp': 200})
+            k += 1
 
 def neighbours(pos):
     x_pos = pos[0]
@@ -32,35 +39,42 @@ def neighbours(pos):
         yield neighbour
 
 def int_order(pos):
-    return (pos[1] * 100000) + (pos[0] * 100)
+    return (pos[1] * 1000) + (pos[0])
 
-def find_paths(target, current, prevs):
-    path_tree = {'point': target, 'children': []}
-    if prevs[target] == None:
-        return path_tree
-    for prev in prevs[target]:
-        children.append(find_paths(prev, current, prevs))
-    return path_tree
+def dijkstra(current):
+    open_spaces = set(filter(lambda x: entities[x] == '.',
+        entities.keys()))
+    unvisited = open_spaces | set([current])
+    prevs = {point: [] for point in unvisited}
+    dists = {point: math.inf for point in unvisited}
+    dists[current] = 0
 
-def list_paths(path_tree):
-    root = path_tree['point']
-    children = path_tree['children']
-    paths = []
-    if len(children) == 0:
-        return [[root]]
-    for child in children:
-        for path in path_tree(children):
-            paths.append(path + [root])
-    return paths
+    while len(unvisited) > 0:
+        node = list(sorted(unvisited, key=lambda x: dists[x]))[0]
+        unvisited.remove(node)
+        node_dist = dists[node]
+        for neighbour in neighbours(node):
+            alt = node_dist + 1
+            if entities[neighbour] != '.':
+                continue
+            if alt == dists[neighbour]:
+                prevs[neighbour].append(node)
+            elif alt < dists[neighbour]:
+                dists[neighbour] = alt
+                prevs[neighbour] = [node]
+    return dists
 
-
+rounds = 0
 combat_over = False
-round = 0
 
 while not combat_over:
     units = elves + goblins
     units = sorted(units, key=lambda x: int_order(x['pos']))
-    for unit in units:
+
+    index = 0
+    unit_len = len(units)
+    while index < unit_len:
+        unit = units[index]
         unit_pos = unit['pos']
         unit_type = unit['type']
         targets = []
@@ -75,7 +89,8 @@ while not combat_over:
             break
 
         # movement step
-        in_range = set([list(neighbours(x['pos'])) for x in targets])
+        in_range = [list(neighbours(x['pos'])) for x in targets]
+        in_range = set([item for sublist in in_range for item in sublist])
         if unit_pos in in_range:
             # go to combat
             pass
@@ -83,30 +98,16 @@ while not combat_over:
             # try to move closer
             in_range = set(filter(
                 lambda x: entities[x] == '.',
-                set([item for sublist in in_range for item in sublist])))
+                in_range))
             if len(in_range) == 0:
                 # no targets with free space 
+                index += 1
                 continue
-            open_spaces = set(filter(lambda x: entities[x] == '.',
-                entities.keys()))
-            unvisited = open_spaces | set([unit_pos])
-            prevs = {point: [] for point in unvisited}
-            dists = {point: math.inf for point in unvisited}
-            dists[unit_pos] = 0
 
-            done = false
-            while len(unvisited) > 0:
-                node = list(sorted(unvisited, key=lambda x: dist[x]))[0]
-                unvisited.remove(node)
-                node_dist = dists[node]
-                for neighbour in neighbours(node):
-                    alt = node_dist + 1
-                    if alt == dists[neighbour]:
-                        prevs[neighbour].append(node)
-                    elif alt < dists[neighbour]:
-                        dists[neighbour] = alt
-                        prevs[neighbour] = [node]
+            # Dijkstra's algorithm to find next step
+            dists = dijkstra(unit_pos)
             
+            # Okay, we have all the distances now, so what's our target?
             min_dist = math.inf
             min_point = []
             for point in in_range:
@@ -118,47 +119,78 @@ while not combat_over:
 
             if min_dist == math.inf:
                 # no reachable points in range
+                index += 1
                 continue
 
+            # Target is the one first in reading order
             min_point = sorted(min_point, key=int_order)
             target_point = min_point[0]
-            path_tree = find_paths(target_point, unit_pos, prevs)
-            path_list = list_paths(path_tree)
-            path_list = sorted(path_list, key=lambda x: int_order(x[1]))
-            next_pos = path_list[0][1]
+
+            # Take the next step first in reading order
+            target_dists = dijkstra(target_point)
+
+            min_dist = math.inf
+            min_point = []
+            for point in neighbours(unit_pos):
+                if entities[point] != '.':
+                    continue
+                if target_dists[point] == min_dist:
+                    min_point.append(point)
+                elif target_dists[point] < min_dist:
+                    min_dist = target_dists[point]
+                    min_point = [point]
+            next_pos = sorted(min_point, key=int_order)[0]
+            entities[unit_pos] = '.'
             entities[next_pos] = unit_type
-            if unit_type == 'E':
-                elves[elves.index(unit)]['pos'] = next_pos
-            else:
-                goblins[goblins.index(unit)]['pos'] = next_pos
             unit['pos'] = next_pos
             unit_pos = next_pos
 
         # okay, now is combat possible?
-        if unit_pos in in_range:
-            target = ''
-            if unit_type == 'E':
-                target = 'G'
-            else:
-                target = 'E'
-            for neighbour in neighbours:
-                if entities[neighbour] == target:
-                    if unit_type == 'E':
-                        goblin_index = [x['pos'] for x in goblins].index(neighbour)
-                        goblins[goblin_index]['hp'] -= elves[elves.index(unit)]['power']
-                        if goblins[goblin_index]['hp'] <= 0:
-                            goblins.pop(goblin_index)
-                    else:
-                        elf_index = [x['pos'] for x in elves].index(neighbour)
-                        elves[elf_index]['hp'] -= goblins[goblins.index(unit)]['power']
-                        if elves[elf_index]['hp'] <= 0:
-                            elves.pop(elf_index)
+        target = ''
+        if unit_type == 'E':
+            target = 'G'
+            targets = goblins
+        else:
+            target = 'E'
+            targets = elves
 
+        defenders = []
+        for neighbour in neighbours(unit_pos):
+            if entities[neighbour] == target:
+                defender_index = [
+                        x['pos'] for x in targets].index(neighbour)
+                defenders.append(targets[defender_index])
+        
+        if len(defenders) == 0:
+            # still not in range
+            pass
+        else:
+            defender = sorted(defenders,
+                    key = lambda x: (x['hp'] * 1000000)
+                    + int_order(x['pos']))[0]
+            defender['hp'] -= unit['power']
+            if defender['hp'] <= 0:
+                defender_index = units.index(defender)
+                if defender_index < index:
+                    index -= 1
+                targets.remove(defender)
+                units.remove(defender)
+                entities[defender['pos']] = '.'
+                del defender
+                unit_len -= 1
+        index += 1
 
+    if not combat_over:
+        rounds += 1
 
+winner = ''
+total_hp = 0
+if len(elves) == 0:
+    winner = 'G'
+    total_hp = sum([x['hp'] for x in goblins])
+else:
+    winner = 'E'
+    total_hp = sum([x['hp'] for x in elves])
 
-        print(in_range)
-        break
+print(rounds * total_hp)
 
-        # Find shortest path to a 
-    combat_over = True
