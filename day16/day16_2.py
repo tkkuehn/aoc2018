@@ -86,11 +86,11 @@ def eqrr(registers, a, b, c):
     output[c] = int(registers[a] == registers[b])
     return output
 
-contents = contents[0:contents.index('12 3 3 2')][0:-3]
+contents_1 = contents[0:contents.index('12 3 3 2')][0:-3]
 
 records = []
-for i in range(int((len(contents)) / 4) + 1):
-    records.append(contents[(4 * i):(4 * i) + 3])
+for i in range(int((len(contents_1)) / 4) + 1):
+    records.append(contents_1[(4 * i):(4 * i) + 3])
 
 test_cases = []
 for record in records:
@@ -113,18 +113,44 @@ for record in records:
 functions = [addr, addi, mulr, muli, banr, bani, borr, bori, setr, seti,
         gtir, gtri, gtrr, eqir, eqri, eqrr]
 
-total_count = 0
+potential_functions = []
+for i in range(16):
+    potential_functions.append(set(functions))
+
 for test_case in test_cases:
-    sample_count = 0
     registers = test_case['before']
     a = test_case['a']
     b = test_case['b']
     c = test_case['c']
+    opcode = test_case['opcode']
     output = test_case['after']
     for function in functions:
-        if function(registers, a, b, c) == output:
-            sample_count += 1
-    if sample_count >= 3:
-        total_count += 1
+        if function(registers, a, b, c) != output:
+            potential_functions[opcode].discard(function)
 
-print(total_count)
+found_functions = set()
+while len(found_functions) < 16:
+    found_new_function = False
+    for i in range(16):
+        function_set = potential_functions[i]
+        unclaimed_functions = function_set - found_functions
+        if len(unclaimed_functions) == 1:
+            found_new_function = True
+            found_function = unclaimed_functions.copy().pop()
+            found_functions.add(found_function)
+            potential_functions[i] = unclaimed_functions.copy()
+    if not found_new_function:
+        break
+
+instructions = contents[contents.index('12 3 3 2'):]
+registers = [0, 0, 0, 0]
+for instruction in instructions:
+    instruction = instruction.split(' ')
+    opcode = int(instruction[0])
+    a = int(instruction[1])
+    b = int(instruction[2])
+    c = int(instruction[3])
+    registers = potential_functions[opcode].copy().pop()(registers, a, b, c)
+
+print(registers[0])
+
