@@ -1,6 +1,6 @@
+<<<<<<< HEAD
 from enum import Enum, auto
 
-contents = []
 with open('./resources/input.txt', 'r') as f:
     contents = f.read().splitlines()
 
@@ -162,3 +162,4 @@ am.traverse_agents()
 print(max(rooms.values()))
 
 print(len([distance for distance in rooms.values() if distance >= 1000]))
+
